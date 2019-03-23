@@ -4,7 +4,8 @@ from django.utils import timezone
 import json
 import copy
 import math
-from api.models import HistoryRecord, Music,PlayList
+import random
+from api.models import HistoryRecord, Music, Tag
 # Create your views here.
 
 
@@ -43,31 +44,44 @@ def get_record(request):
 
 def get_recommend(request):
     u_id = request.GET.get('u_id')
-    if not u_id:
-        return render_fail('require u_id')
     limit = int(request.GET.get('limit', 10))
-    records = HistoryRecord.objects.filter(u_id=u_id).order_by('-id')[:50]
-    h_musices = Music.objects.filter(m_id__in=[r.m_id for r in records])
+    ret = []
+    if u_id:
+        records = HistoryRecord.objects.filter(u_id=u_id).order_by('-id')[:50]
+        h_musices = Music.objects.filter(m_id__in=[r.m_id for r in records])
 
-    tag_num_dict = {}
-    total_sum = 0
-    print([p.name for p in Music.objects.get(pk=1).playlists.all()])
-    for m in h_musices:
-        print(m.name)
-        for pl in m.playlists.all():
-            print('--', pl.name)
-            for tag in pl.tags.all():
-                print('  --', tag.name)
-                if tag.name in tag_num_dict:
-                    tag_num_dict[tag.name] += 1
-                else:
-                    tag_num_dict[tag.name] = 1
-                total_sum += 1
-    recommend = []
-    print(tag_num_dict)
-    for tag, num in copy.deepcopy(tag_num_dict).items():
-        count = math.ceil((num / total_sum) * limit)
+        tag_num_dict = {}
+        total_sum = 0
+        for m in h_musices:
+            # print('-', m.name)
+            for pl in m.playlists.all():
+                # print('  --', pl.name)
+                for tag in pl.tags.all():
+                    # print('    ---', tag.name)
+                    if tag.name in tag_num_dict:
+                        tag_num_dict[tag.name] += 1
+                    else:
+                        tag_num_dict[tag.name] = 1
+                    total_sum += 1
 
-    return render_success({})
+        for tag, num in copy.deepcopy(tag_num_dict).items():
+            count = math.ceil((num / total_sum) * limit)
+            playlists = Tag.objects.get(name=tag).playlist_set.all()
 
-    
+            for i in random.sample(range(playlists.count()), count):
+                sample_music = playlists[i].music_set.order_by('?').first()
+                ret.append({
+                    'm_id': sample_music.m_id,
+                    'name': sample_music.name,
+                    'tag': tag,
+                })
+    else:
+        musices = Music.objects.all()
+        for i in random.sample(range(musices.count()), limit):
+            sample_music = musices[i]
+            ret.append({
+                'm_id': sample_music.m_id,
+                'name': sample_music.name,
+            })
+    random.shuffle(ret)
+    return render_success(ret[:limit])

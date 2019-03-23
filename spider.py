@@ -1,5 +1,6 @@
 import sys, os
 import django
+import time
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -26,10 +27,14 @@ def get_tag():
 
 
 def get_music_from_playlist(p):
+    start_time = time.time()
     rep = requests.get(PROXY_HOST + '/playlist/detail?id=%d' % p)
     data = rep.json()
     if str(data['code']) == '200':
         playlist = data['playlist']
+        if len(playlist['tracks']) <= 1:
+            print('Your ip may have been blocked!!!')
+            exit(0)
         tags = Tag.objects.filter(name__in=playlist['tags'])
         if PlayList.objects.filter(p_id=playlist['id']).exists():
             pl = PlayList.objects.get(p_id=playlist['id'])
@@ -58,6 +63,11 @@ def get_music_from_playlist(p):
                 music.playlists.add(pl)
     else:
         print("%d: %s" % (p, data['msg']))
+
+    end_time = time.time()
+    sleep_time = 10 - int(end_time - start_time)
+    sleep_time = sleep_time if sleep_time > 0 else 0
+    time.sleep(sleep_time)
 
 
 def get_music_from_hot_playlist():
