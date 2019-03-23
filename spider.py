@@ -1,6 +1,7 @@
 import sys, os
 import django
 import time
+import logging
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -11,6 +12,8 @@ django.setup()
 import requests
 from api.models import *
 
+LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+logging.basicConfig(filename=os.path.join(BASE_DIR, 'spider.log'), level=logging.INFO, format=LOG_FORMAT)
 
 PROXY_HOST = 'http://localhost:3000'
 
@@ -33,7 +36,7 @@ def get_music_from_playlist(p):
     if str(data['code']) == '200':
         playlist = data['playlist']
         if len(playlist['tracks']) <= 1:
-            print('Your ip may have been blocked!!!')
+            logging.info('Your ip may have been blocked!!!')
             exit(0)
         tags = Tag.objects.filter(name__in=playlist['tags'])
         if PlayList.objects.filter(p_id=playlist['id']).exists():
@@ -62,7 +65,7 @@ def get_music_from_playlist(p):
                 music = Music.objects.create(name=track['name'], m_id=track['id'])
                 music.playlists.add(pl)
     else:
-        print("%d: %s" % (p, data['msg']))
+        logging.info("%d: %s" % (p, data['msg']))
 
     end_time = time.time()
     sleep_time = 10 - int(end_time - start_time)
@@ -84,7 +87,7 @@ def get_music_from_hot_playlist():
     for i, tag in enumerate(tags):
         rep = requests.get(PROXY_HOST + '/top/playlist?limit=1000&order=hot&cat=%s' % tag.name)
         for j, pl in enumerate(rep.json()['playlists']):
-            print("Tag %s index %d playlist %d: start" % (tag.name, j, pl['id'],))
+            logging.info("Tag %s index %d playlist %d: start" % (tag.name, j, pl['id'],))
             get_music_from_playlist(pl['id'])
 
         with open(p_file, 'w') as f:
@@ -104,7 +107,7 @@ def get_music_from_default_playlist():
 
     while True:
         p += 1
-        print("playlist %d: start" % (p,))
+        logging.info("playlist %d: start" % (p,))
         get_music_from_playlist(p)
         #
         with open(p_file, 'w') as f:
@@ -113,7 +116,7 @@ def get_music_from_default_playlist():
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        print('spider.py [ tag | music_from_default_playlist | music_from_hot_playlist ]')
+        logging.info('spider.py [ tag | music_from_default_playlist | music_from_hot_playlist ]')
         exit(0)
 
     if sys.argv[1] == 'tag':
@@ -123,4 +126,4 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'music_from_hot_playlist':
         get_music_from_hot_playlist()
     else:
-        print('spider.py [ tag | music_from_default_playlist | music_from_hot_playlist ]')
+        logging.info('spider.py [ tag | music_from_default_playlist | music_from_hot_playlist ]')
