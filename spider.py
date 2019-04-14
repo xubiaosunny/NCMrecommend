@@ -2,15 +2,14 @@ import sys, os
 import django
 import time
 import logging
+import requests
+from api.models import *
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.extend([BASE_DIR, ])
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'NCMrecommend.settings')
 django.setup()
-
-import requests
-from api.models import *
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(filename=os.path.join(BASE_DIR, 'spider.log'), level=logging.INFO, format=LOG_FORMAT)

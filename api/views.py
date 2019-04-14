@@ -10,11 +10,21 @@ from api.models import HistoryRecord, Music, Tag
 
 
 def render_success(data):
-    return HttpResponse(json.dumps({'code': 200, 'data': data}), content_type="text/json", status=200)
+    response = HttpResponse(json.dumps({'code': 200, 'data': data}), content_type="text/json", status=200)
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
+    response["Access-Control-Max-Age"] = "1000"
+    response["Access-Control-Allow-Headers"] = "*"
+    return response
 
 
 def render_fail(msg, code=400):
-    return HttpResponse(json.dumps({'code': code, 'msg': msg}), content_type="text/json", status=200)
+    response = HttpResponse(json.dumps({'code': code, 'msg': msg}), content_type="text/json", status=200)
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
+    response["Access-Control-Max-Age"] = "1000"
+    response["Access-Control-Allow-Headers"] = "*"
+    return response
 
 
 def set_record(request):
