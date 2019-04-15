@@ -60,7 +60,7 @@ def add_music_collection(request):
     if not m_id:
         return render_fail('require m_id')
     m_name = request.JSON.get('m_name')
-    if MusicCollection.objects.filter(u_id=u_id, m_id=m_id).exist():
+    if MusicCollection.objects.filter(u_id=u_id, m_id=m_id).exists():
         return render_fail('already exist')
     r = MusicCollection.objects.create(u_id=u_id, m_id=m_id, m_name=m_name)
     return render_success(
