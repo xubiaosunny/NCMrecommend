@@ -10,6 +10,13 @@ class HistoryRecord(models.Model):
     time = models.DateTimeField(auto_now_add=True)
 
 
+class MusicCollection(models.Model):
+    u_id = models.IntegerField(db_index=True)
+    m_id = models.IntegerField(db_index=True)
+    m_name = models.CharField(max_length=50, null=True)
+    time = models.DateTimeField(auto_now_add=True)
+
+
 class Tag(models.Model):
     # categories = {
     #     "0": "语种",

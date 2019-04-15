@@ -5,7 +5,7 @@ import json
 import copy
 import math
 import random
-from api.models import HistoryRecord, Music, Tag
+from api.models import HistoryRecord, Music, Tag, MusicCollection
 # Create your views here.
 
 
@@ -52,6 +52,48 @@ def get_record(request):
     return render_success(data)
 
 
+def add_music_collection(request):
+    u_id = request.JSON.get('u_id')
+    if not u_id:
+        return render_fail('require u_id')
+    m_id = request.JSON.get('m_id')
+    if not m_id:
+        return render_fail('require m_id')
+    m_name = request.JSON.get('m_name')
+    if MusicCollection.objects.filter(u_id=u_id, m_id=m_id).exist():
+        return render_fail('already exist')
+    r = MusicCollection.objects.create(u_id=u_id, m_id=m_id, m_name=m_name)
+    return render_success(
+        {'u_id': r.u_id, 'm_id': r.m_id, 'm_name': r.m_name,
+         'time': timezone.localtime(r.time).strftime('%Y-%m-%d %H:%M:%S') })
+
+
+
+def del_music_collection(request):
+    u_id = request.JSON.get('u_id')
+    if not u_id:
+        return render_fail('require u_id')
+    m_id = request.JSON.get('m_id')
+    if not m_id:
+        return render_fail('require m_id')
+    try:
+        collection = MusicCollection.objects.get(u_id=u_id, m_id=m_id)
+    except:
+        return render_fail('not exist')
+    collection.delete()
+    return render_success({'u_id': u_id, 'm_id': m_id })
+
+
+def get_music_collection(request):
+    u_id = request.GET.get('u_id')
+    if not u_id:
+        return render_fail('require u_id')
+    records = MusicCollection.objects.filter(u_id=u_id).order_by('-id')
+    data = [{'m_id': r.m_id, 'm_name': r.m_name, 'time': timezone.localtime(r.time).strftime('%Y-%m-%d %H:%M:%S')}
+            for r in records]
+    return render_success(data)
+
+
 def get_recommend(request):
     u_id = request.GET.get('u_id')
     limit = int(request.GET.get('limit', 10))
@@ -73,6 +115,21 @@ def get_recommend(request):
                     else:
                         tag_num_dict[tag.name] = 1
                     total_sum += 1
+
+        collections = MusicCollection.objects.filter(u_id=u_id)
+        c_musices = Music.objects.filter(m_id__in=[r.m_id for r in collections])
+        # collection double ratio
+        for m in c_musices:
+            # print('-', m.name)
+            for pl in m.playlists.all():
+                # print('  --', pl.name)
+                for tag in pl.tags.all():
+                    # print('    ---', tag.name)
+                    if tag.name in tag_num_dict:
+                        tag_num_dict[tag.name] += 2
+                    else:
+                        tag_num_dict[tag.name] = 2
+                    total_sum += 2
 
         for tag, num in copy.deepcopy(tag_num_dict).items():
             count = math.ceil((num / total_sum) * limit)
